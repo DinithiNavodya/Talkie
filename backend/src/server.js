@@ -1,6 +1,8 @@
 // const express = require('express');
 import express from 'express';
 import path from 'path';    // newly added
+import cookieParser from 'cookie-parser';
+
 import {ENV} from './lib/env.js';
 
 import authRoutes from './routes/auth.route.js';
@@ -21,6 +23,7 @@ const __dirname = import.meta.dirname;
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 //////////////////
 
