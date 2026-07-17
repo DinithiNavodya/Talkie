@@ -2,6 +2,7 @@
 import express from 'express';
 import path from 'path';    // newly added
 import cookieParser from 'cookie-parser';
+import cors from "cors";
 
 import {ENV} from './lib/env.js';
 
@@ -22,6 +23,7 @@ const __dirname = import.meta.dirname;
 
 
 app.use(express.json());
+app.use(cors({origin:ENV.CLIENT_URL,credentials:true}));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
