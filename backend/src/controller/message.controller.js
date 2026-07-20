@@ -2,11 +2,12 @@ import { json } from 'express';
 import Message from '../models/Message.js';
 import User from '../models/User.js';
 import cloudinary from "../lib/cloudinary.js";
+import { getReceiverSocketId ,io} from '../lib/socket.js';
 // Get all contacts for the logged-in user
 export const getAllContacts = async (req, res) => {
   try {
     const loggedInuserId = req.user._id; // Assuming you have user authentication middleware that sets req.user
-    const filteredUsers = await User.find({ _id: { $ne: loggedInuserId } }).select("-password");
+    const filteredUsers = await User.find({ _id: { $ne: loggedInUserId } }).select("-password");
 
     res.status(200).json(filteredUsers);
   } catch (error) {
@@ -19,7 +20,7 @@ export const getMessagesByUserId = async (req, res) => {
   try {
     const myId = req.user._id; // Assuming you have user authentication middleware that sets req.user
     const {id: userToChatId} = req.params;
-    const messages = await Message. find({
+    const messages = await Message.find({
         $or:[
             {senderId: myId,receiverId: userToChatId},
             {senderId:userToChatId,receiverId: myId},
@@ -29,7 +30,9 @@ export const getMessagesByUserId = async (req, res) => {
     res.status(200).json(messages)
 }catch(error){
     console.log("Error in getMessages controller:",error.message);
-};
+    res.status(500).json({ error: "Internal server error" });
+
+}
 };
 
 export const sendMessage = async(req,res)=>{
@@ -63,10 +66,15 @@ export const sendMessage = async(req,res)=>{
             image:imageUrl,
         });
 
-        await newMessage.save()
+        await newMessage.save();
 
         //todo: send message in realtime if user is online- socket.io
-        
+        const receiverSocketId = getReceiverSocketId(receiverId);
+        if (receiverSocketId){
+            io.to(receiverSocketId).emit("newMessage",newMessage);
+        }
+
+
         res.status(201).json(newMessage);
         
         }catch(error){
@@ -101,7 +109,7 @@ export const getChatPartners = async (req,res)=>{
 
         res.status(200).json(chatPartners)
     } catch(error){
-      console.error("Error in getChatPartners:,error.message");
+      console.error("Error in getChatPartners:",error.message);
       res.status(500).json({error:"Internal Server error"});
     }
     
